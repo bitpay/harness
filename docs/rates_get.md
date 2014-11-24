@@ -1,4 +1,4 @@
-### /tokens POST
+### /rates GET
 
 ***
 

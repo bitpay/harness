@@ -45,7 +45,7 @@
                 <select ng-model="method" class="form-control" ng-options="b for b in methods">
                 </select>
 
-                <div ng-repeat="p in getParameters(resource, method)">
+                <div ng-repeat="p in parameters">
                   <label class="control-label"><strong>{{p.name}}</strong></label>
                   <input ng-model="p.input" type="text" class="form-control">
                 </div>

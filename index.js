@@ -11,7 +11,7 @@ authenticateApp.config(['markedProvider', function(markedProvider) {
   markedProvider.setOptions({gfm: true});
 }]);
 
-var url = 'https://alan.bp:8088';
+var url = 'https://test.bitpay.com';
 
 angular.element(document).ready(function() {
 
@@ -21,22 +21,22 @@ angular.element(document).ready(function() {
 });
 
 var parameters = {
-  tokens: {
-    POST: { secure: false, doc: "tokens_post.md", params: [ {name: 'id'}, {name: 'pairingCode'}, { name: 'facade' } ] }
-  },
-  rates: {
-    GET: { secure: false, doc: "rates_get.md", params: [] }
+  bills: {
+    POST: { secure: true, doc: "bills_post.md", params: [ { name: 'items' }, { name: "currency"} ] },
+    GET: { secure: true, doc: "bills_get.md", params: [ { name: 'status' }]}
   },
   invoices: {
     GET: { secure: true, doc: "invoices_get.md", params: [ { name: 'status' }, { name: 'orderId' }, { name: 'itemCode' }, { name: "dateStart" }, { name: 'dateEnd' }, { name: 'limit' }, { name: 'skip' } ] },
     POST: { secure: true, doc: "invoices_post.md", params: [ { name: 'currency' }, { name: 'price' }, { name: 'orderId' }, { name: 'itemDesc' }, { name: 'itemCode' }] }
   },
   "invoices/:invoiceId": {
-    GET: { secure: "optional", params: [] }
+    GET: { secure: "optional", doc: "invoices_invoiceid_get.md", params: [] }
   },
-  bills: {
-    POST: { secure: true, doc: "bills_post.md", params: [ { name: 'items' }, { name: "currency"} ] },
-    GET: { secure: true, doc: "bills_get.md", params: [ { name: 'status' }]}
+  rates: {
+    GET: { secure: false, doc: "rates_get.md", params: [] }
+  },
+  tokens: {
+    POST: { secure: false, doc: "tokens_post.md", params: [ {name: 'id'}, {name: 'pairingCode'}, { name: 'facade' } ] }
   }
 }
 
@@ -113,6 +113,20 @@ authenticateApp.controller('RequestCtrl', function($rootScope, $scope, $http) {
   $scope.$watch('subresources', $scope.updateResolvedResource, true);
 
 
+  $scope.updateParameters = function() {
+    var resource = $scope.resource;
+    var method = $scope.method;
+
+    if(parameters[resource] && parameters[resource][method]) {
+      $scope.signRequest = parameters[resource][method].secure;
+      $scope.parameters = parameters[resource][method].params
+    } else {
+      $scope.parameters = [];
+    }
+  }
+
+  $scope.$watch('resource', $scope.updateParameters);
+  $scope.$watch('method', $scope.updateParameters);
 
   $scope.getParameters = function(resource, method) {
     if(parameters[resource] && parameters[resource][method]) {

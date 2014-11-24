@@ -1,4 +1,4 @@
-### Welcome to the API Request Builder
+### Welcome to the API Request Harness
 ***
 
 #### Step 1
