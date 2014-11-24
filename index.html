@@ -1,0 +1,125 @@
+<html>
+  <head>
+    <title>BitPay API Test Harness</title>
+
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css"/>
+    <script src="bower_components/angularjs/angular.min.js"></script>
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="bower_components/bitcore/browser/bundle.js"></script>
+
+    <script src="bower_components/marked/lib/marked.js"></script>
+    <script src="bower_components/angular-marked/angular-marked.js"></script>
+
+    <script src="index.js"></script>
+
+    <style>
+      code > div {
+        white-space: pre-wrap;
+      }
+    </style>
+
+    </head>
+    <body>
+      <div ng-controller="RequestCtrl">
+
+        <div class="container-fluid" style="padding-left: 25px; padding-right: 25px">
+          <div class="row">
+            <h3>BitPay API Request Harness</h3>
+          </div>
+          <div class="row">
+            <div class="col-xs-12 col-sm-12 col-md-6 col-lg-4">
+
+              <div class="well">
+                <h4>Step 1: Method, Endpoint, and Parameters</h4>
+                <label class="control-label"><strong>Endpoint/Resource</strong></label>
+                <select ng-model="resource" class="form-control" ng-options="a for a in resources">
+                  <!--option>tokens</option>
+                  <option>rates</option-->
+                </select>
+                <div ng-repeat="s in subresources">
+                  <label class="control-label"><strong>{{s.name}}</strong></label>
+                  <input ng-model="s.input" type="text" class="form-control">
+                </div>
+                <label class="control-label"><strong>HTTP Method</strong></label>
+                <select ng-model="method" class="form-control" ng-options="b for b in methods">
+                </select>
+
+                <div ng-repeat="p in parameters">
+                  <label class="control-label"><strong>{{p.name}}</strong></label>
+                  <input ng-model="p.input" type="text" class="form-control">
+                </div>
+                <label class="control-label"><strong>Token (Authorization)</strong></label>
+                <input ng-disabled="!signRequest" ng-model="token" type="text" class="form-control">
+              </div>
+
+              <div class="well">
+                <h4>Step 2: Cryptography</h4>
+
+                <label class="control-label"><strong>Does the request require a cryptographic signature?</strong></label>
+                <div ng-bind="signRequest" class="form-control"></div>
+
+                </select>
+
+                <label class="control-label"><strong>Private Key</strong></label>
+                <div class="input-group">
+                  <input ng-disabled="!signRequest" type="text" ng-model="privKey" class="form-control">
+                  <span class="input-group-btn">
+                    <button ng-disabled="!signRequest" ng-click="importKey()" class="btn btn-default" type="button">Import</button>
+                    <button ng-disabled="!signRequest" ng-click="generateKey()" class="btn btn-default" type="button">Generate</button>
+                  </span>
+                </div>
+                <label class="control-label"><strong>Public Key</strong></label>
+                <input ng-disabled="!signRequest" ng-model="pubKey" type="text" class="form-control">
+                <label class="control-label"><strong>Identity (SIN)</strong></label>
+                <input ng-disabled="!signRequest" ng-model="sin" type="text" class="form-control">
+              </div>
+
+              <div class="well">
+                <h4>Step 3: Payload & Headers</h4>
+
+                <label class="control-label"><strong>Request Payload</strong></label>
+                  <div ng-bind="payloadToSign" ng-disabled="!signRequest" class="form-control" style="word-break: break-all; height: auto;" ></div>
+                <label class="control-label"><strong>Signature (x-signature)</strong></label>
+                <div ng-bind="signature" ng-disabled="!signRequest" class="form-control" style="word-break: break-all; height: auto;" ></div>
+                <label class="control-label"><strong>Identity (SIN) (x-identity)</strong></label>
+                <input type="text" ng-disabled="!signRequest" ng-model="sin" class="form-control">
+                <label class="control-label"><strong>Version (x-accept-version)</strong></label>
+                <select ng-model="version" class="form-control" ng-options="b for b in ['2.0.0']">>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-xs-12 col-sm-12 col-md-6 col-lg-4">
+              <div class="well">
+                <h4>Request</h4>
+                <code>
+                  <div style="white-space:pre-wrap;">URL: {{url + resolvedResource + queryString}}</div>
+                  <div style="white-space:pre-wrap;">Method: {{method}}</div>
+                  <div style="white-space:pre-wrap;">Headers:</div>
+                  <div style="word-break: break-all;" ng-repeat="(key, value) in config.headers">&nbsp;&nbsp;{{key}}: {{value}}</div>
+                  <div>Data:</div>
+                  <div style="white-space:pre-wrap;">&nbsp;&nbsp;<span style="word-break: break-all;" ng-bind="payload"></span></div>
+
+                  <button ng-click="submitRequest()" class="btn btn-lg btn-primary">Execute Request</button>
+
+                </code>
+              </div>
+              <div class="well">
+                <h4>Response</h4>
+                <code>
+                  <div>{{responseStatus}} {{responseStatusText}}</div>
+                  <br>
+                  <div style="word-break: break-all;" ng-bind="responseData"></div>
+                </code>
+              </div>
+            </div>
+            <div class="hidden-xs hidden-sm hidden-md col-lg-4 well">
+              <h3 ng-hide="docs">Choose a resource and method to see documentation</h3>
+              <div ng-include="docs" marked></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </body>
+</html>
