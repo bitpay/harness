@@ -22,8 +22,16 @@ angular.element(document).ready(function() {
 
 var parameters = {
   bills: {
-    POST: { secure: true, doc: "bills_post.md", params: [ { name: 'items' }, { name: "currency"} ] },
-    GET: { secure: true, doc: "bills_get.md", params: [ { name: 'status' }]}
+    GET: { secure: true, doc: "bills_get.md", params: [ { name: 'status' }]},
+    POST: { secure: true, doc: "bills_post.md", params: [ { name: 'items' }, { name: "currency"}, { name: "email" } ] }
+
+  },
+  "bills/:billId": {
+    GET: { secure: true, doc: "bills_billid_get.md", params: [] },
+    PUT: { secure: true, doc: "bills_billid_put.md", params: [ { name: 'items' }, { name: "currency"}, { name: "email" }, { name: "status" } ] }
+  },
+  currencies: {
+    GET: { secure: false, doc: "currencies_get.md", params: [] }
   },
   invoices: {
     GET: { secure: true, doc: "invoices_get.md", params: [ { name: 'status' }, { name: 'orderId' }, { name: 'itemCode' }, { name: "dateStart" }, { name: 'dateEnd' }, { name: 'limit' }, { name: 'skip' } ] },
@@ -31,6 +39,20 @@ var parameters = {
   },
   "invoices/:invoiceId": {
     GET: { secure: "optional", doc: "invoices_invoiceid_get.md", params: [] }
+  },
+  "invoices/:invoiceId/adjustments": {
+    POST: { secure: "true", doc: "invoices_invoiceid_adjustments_post.md", params: [ { name: "type"}] }
+  },
+  "invoices/:invoiceId/notifications": {
+    POST: { secure: "true", doc: "invoices_invoiceid_notifications_post.md", params: [] }
+  },
+  "invoices/:invoiceId/refunds": {
+    POST: { secure: true, doc: "invoices_invoiceid_refunds_post.md", params: [ { name: 'bitcoinAddress' }, { name: 'amount'}, { name: 'currency' }] },
+    GET: { secure: true, doc: "invoices_invoiceid_refunds_get.md", params: [] }
+  },
+  "invoices/:invoiceId/refunds/:requestId": {
+    DELETE: { secure: true, doc: "invoices_invoiceid_refunds_requestid_delete.md", params: [] },
+    GET: { secure: true, doc: "invoices_invoiceid_refunds_requestid_get.md", params: [] }
   },
   rates: {
     GET: { secure: false, doc: "rates_get.md", params: [] }
