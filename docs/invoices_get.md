@@ -10,7 +10,7 @@ Query for invoices on an account
 
 ### Parameters
 
-**status** - invoice status (???)
+**status** - invoice status
 
 **orderId** - the optional order id specified at time of invoice creation
 
@@ -22,7 +22,7 @@ Query for invoices on an account
 
 **limit** - maximum results that the query will return (useful for paging results)
 
-**skip** - number of results to offset (ex. skip 10 will give you results starting with the 11th result)
+**offset** - number of results to offset (ex. skip 10 will give you results starting with the 11th result)
 ***
 
 ### Cryptography
