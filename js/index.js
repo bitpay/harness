@@ -5,7 +5,19 @@ var SINKey = bitcore.SINKey
 var coinUtil = bitcore.util;
 
 
-var authenticateApp = angular.module('requestApp', ['hc.marked']);
+var authenticateApp = angular.module('requestApp', ['hc.marked'])
+  .directive('compile', ['$compile', function ($compile) {
+  return function(scope, element, attrs) {
+    scope.$watch(
+      function(scope) {
+        return scope.$eval(attrs.compile);
+      },
+      function(value) {
+        element.html(value);
+        $compile(element.contents())(scope);
+      }
+    )};
+}])
 
 authenticateApp.config(['markedProvider', function(markedProvider) {
   markedProvider.setOptions({gfm: true});
@@ -34,17 +46,17 @@ var parameters = {
     GET: { secure: false, doc: "currencies_get.md", params: [] }
   },
   invoices: {
-    GET: { secure: true, doc: "invoices_get.md", params: [ { name: 'status' }, { name: 'orderId' }, { name: 'itemCode' }, { name: "dateStart" }, { name: 'dateEnd' }, { name: 'limit' }, { name: 'skip' } ] },
+    GET: { secure: true, doc: "invoices_get.md", params: [ { name: 'status' }, { name: 'orderId' }, { name: 'itemCode' }, { name: "dateStart" }, { name: 'dateEnd' }, { name: 'limit' }, { name: 'offset' } ] },
     POST: { secure: true, doc: "invoices_post.md", params: [ { name: 'currency' }, { name: 'price' }, { name: 'orderId' }, { name: 'itemDesc' }, { name: 'itemCode' }] }
   },
   "invoices/:invoiceId": {
     GET: { secure: "optional", doc: "invoices_invoiceid_get.md", params: [] }
   },
   "invoices/:invoiceId/adjustments": {
-    POST: { secure: "true", doc: "invoices_invoiceid_adjustments_post.md", params: [ { name: "type"}] }
+    POST: { secure: true, doc: "invoices_invoiceid_adjustments_post.md", params: [ { name: "type"}] }
   },
   "invoices/:invoiceId/notifications": {
-    POST: { secure: "true", doc: "invoices_invoiceid_notifications_post.md", params: [] }
+    POST: { secure: true, doc: "invoices_invoiceid_notifications_post.md", params: [] }
   },
   "invoices/:invoiceId/refunds": {
     POST: { secure: true, doc: "invoices_invoiceid_refunds_post.md", params: [ { name: 'bitcoinAddress' }, { name: 'amount'}, { name: 'currency' }] },
@@ -54,6 +66,12 @@ var parameters = {
     DELETE: { secure: true, doc: "invoices_invoiceid_refunds_requestid_delete.md", params: [] },
     GET: { secure: true, doc: "invoices_invoiceid_refunds_requestid_get.md", params: [] }
   },
+  "ledgers": {
+    GET: { secure: true, doc: "ledgers_get.md", params: [] }
+  },
+  "ledgers/:currency": {
+    GET: { secure: true, doc: "ledgers_currency_get.md", params: [ { name: "startDate" }, { name: "endDate" } ] }
+  },
   rates: {
     GET: { secure: false, doc: "rates_get.md", params: [] }
   },
@@ -62,7 +80,7 @@ var parameters = {
   }
 }
 
-authenticateApp.controller('RequestCtrl', function($rootScope, $scope, $http) {
+authenticateApp.controller('RequestCtrl', function($rootScope, $scope, $http, $sce) {
 
   $scope.parameters = [];
   $scope.privKey = "";
@@ -197,7 +215,7 @@ authenticateApp.controller('RequestCtrl', function($rootScope, $scope, $http) {
     var parameters = $scope.parameters,
       queryString = "";
 
-    if($scope.token != "") {
+    if($scope.token != "" && $scope.signRequest) {
       queryString += "token=" + $scope.token;
     }
 
@@ -299,9 +317,14 @@ authenticateApp.controller('RequestCtrl', function($rootScope, $scope, $http) {
       data: $scope.payload
     }
 
-    if($scope.signRequest) {
+    console.log($scope.signRequest == true || ($scope.signRequest == 'optional' && $scope.privKey));
+    if($scope.signRequest == true || ($scope.signRequest == 'optional' && $scope.privKey)) {
       $scope.config.headers["x-identity"] = $scope.pubKey;
       $scope.config.headers["x-signature"] = $scope.signature;
+      console.log("update headers");
+    } else {
+      delete $scope.config.headers["x-identity"];
+      delete $scope.config.headers["x-signature"];
     }
   }
 
@@ -331,24 +354,16 @@ authenticateApp.controller('RequestCtrl', function($rootScope, $scope, $http) {
   $scope.$watch('method', $scope.updateDocs);
 
   $scope.submitRequest = function() {
-/*    $scope.config = {
-      method: $scope.method,
-      url: url + '/' + $scope.resource,
-      headers: {
-        "x-accept-version": $scope.version,
-        "content-type": "application/json"
-      },
-      data: $scope.payload
-    }
-
-    if($scope.signRequest) {
-      config.headers["x-identity"] = $scope.sin;
-      config.headers["x-signature"] = $scope.signature;
-    }*/
-    console.log($scope.config);
-    console.log($scope.payloadToSign);
     $http($scope.config).then(function(res) {
-      $scope.responseData = JSON.stringify(res.data, null, 2);
+      $scope.responseData = $sce.trustAsHtml(JSON.stringify(res.data, function(key, value) {
+        if(key == "token") {
+          return "<a ng-click=setToken('" + value + "')>" + value + "</a>";
+        } else if(key == "url") {
+          return "<a target='_blank' href='" + value + "'>" + value + "</a>";
+        } else {
+          return value;
+        }
+      }, 2));
       $scope.responseStatus = res.status;
       $scope.responseStatusText = res.statusText;
     }, function(res) {
@@ -357,6 +372,36 @@ authenticateApp.controller('RequestCtrl', function($rootScope, $scope, $http) {
       $scope.responseStatusText = res.statusText;
     });
 
+  }
+
+  $scope.updateCurl = function() {
+    var cmd = "curl";
+
+    if(!$scope.method || !$scope.resolvedResource) {
+      $scope.curl = "";
+      return;
+    }
+
+    cmd += " -X " + $scope.method;
+    for(var i in $scope.config.headers) {
+      cmd += ' -H "' + i + ': ' + $scope.config.headers[i] + '"';
+    }
+    if($scope.method == "POST" || $scope.method == "PUT") {
+      cmd += " -d '" + $scope.payload + "'";
+      cmd += ' "' + url + $scope.resolvedResource + $scope.queryString + '"';
+    }
+
+    if($scope.method == "GET" || $scope.method == "DELETE") {
+      cmd += ' "' + url + $scope.resolvedResource + $scope.queryString + '"';
+    }
+
+    $scope.curl = cmd;
+  }
+
+  $scope.$watch('config', $scope.updateCurl);
+
+  $scope.setToken = function(token) {
+    $scope.token = token;
   }
 
 });

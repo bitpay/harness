@@ -36,8 +36,6 @@ Update a BitPay bill
 
 **showRate** - Boolean/string, whether to show an exchange rate or not
 
-**archived** - ???
-
 **address1** - The first line of the bill recipient's address
 
 **address2** - The second line of the bill recipient's address
